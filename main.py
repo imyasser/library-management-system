@@ -1,11 +1,12 @@
 from operator import truediv
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import mysql.connector
 from matplotlib.backend_tools import cursors
+from matplotlib.pyplot import title
+from datetime import datetime
 
 df = pd.read_csv('books.csv__100lines.csv')
 
@@ -57,10 +58,50 @@ def create_user():
     connection.commit()
     print("----Account created----- \n")
 
-def Add_book():
-    print("--------Add a Book to The library-----------")
-    name = str(input("Enter your username"))
+def search_book(book_name):
+    search_book = " SELECT * FROM books WHERE title = %s"
+    cursor.execute(search_book,(book_name,))
+    found_book = cursor.fetchone()
 
+    if found_book:
+        return found_book
+    else:
+        return None
+
+def Add_book(book):
+    if search_book(book)==True:
+        update_num = "UPDATE books SET book_num = book_num + 1 WHERE title = %s"
+        cursor.execute(update_num,(book,))
+        connection.commit()
+
+    else:
+
+        book_author = str(input("Enter the author of the book"))
+        book_avg_rat = str(input("Enter the rating of the book"))
+        lang = str(input("Enter the language of the book"))
+
+        insert_db = "INSERT INTO books(title,authors,average_rating,languagecode) VALUES(%s,%s,%s,%s)"
+        cursor.execute(insert_db,(book,book_author,book_avg_rat,lang))
+        connection.commit()
+
+    print("BOOK ADDED TO THE LIBRARY")
+def Borrow_book(book,username):
+    bk = search_book(book)
+    if bk:
+        cursor.execute("SELECT gender FROM users WHERE username = %s",(username,))
+        data_user  = cursor.fetchone()
+
+        gender_bor = data_user[0]
+        time_borr = datetime.now().strftime("%A, %d %B %Y, %I:%M %p")
+        insrt_brw = "INSERT INTO borrow(username,gender,borr_time) VALUES(%s,%s,%s)"
+
+        cursor.execute(insrt_brw,(username,gender_bor,time_borr))
+        cursor.execute("UPDATE books SET book_num = book_num - 1 WHERE title = %s",(book,))
+        connection.commit()
+
+        print("Book borrowed sucessful ")
+    else:
+        print("Not found")
 
 def main():
     while True:
@@ -87,10 +128,24 @@ def main():
         print("-----WELCOME TO THE LIBRARY-----")
         print("1) Borrow a book")
         print("2) Add a BoOK to the library")
-        print("3) Exit")
+        print("3) Search for a book")
+        print("4) Exit")
         print("--------------------------------")
         choice = input("Choose one from the list:")
-
+        if choice == '1':
+            name = input("Enter book name:")
+            Borrow_book(name,user_name)
+        elif choice == '2':
+            name = input("Enter book name:")
+            Add_book(name)
+            continue
+        elif choice == '3':
+            name = input("Enter book name:")
+            book_founded = search_book(name)
+            if book_founded:
+                print(f"Book was founded written by {book_founded[2]}")
+            else:
+                print("Not founded")
 
 if __name__ == "__main__":
     main()
@@ -110,7 +165,7 @@ df['women'] = np.random.randint(10,300,size=len(df))
 
 print("Inserting data")
 
-for _,row in df.iterrows():
+for _,row in df.iterrows(): index,row 
     insert_book =  INSERT INTO books
                     (title,authors,average_rating,women,languagecode)
                     VALUES (%s, %s, %s, %s, %s, %s)
